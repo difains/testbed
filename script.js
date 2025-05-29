@@ -25,6 +25,15 @@ function updateMonthTitle() {
 }
 updateMonthTitle();
 
+// 오늘 날짜를 yyyy-mm-dd로 반환
+function getTodayStr() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // 월 이동 버튼
 document.getElementById('prevMonthBtn').onclick = () => {
   currentMonth--;
@@ -47,14 +56,27 @@ document.getElementById('nextMonthBtn').onclick = () => {
   fetchAndRenderList();
 };
 
-// 금요일만 선택 가능하게 min/max 설정
+// 금요일만 선택 가능하게 min/max 설정 + 오늘 날짜 기본값
 function setDatePickerToFridays() {
   const inputDate = document.getElementById('inputDate');
   const min = new Date(currentYear, currentMonth - 1, 1);
   const max = new Date(currentYear, currentMonth, 0);
   inputDate.min = min.toISOString().slice(0, 10);
   inputDate.max = max.toISOString().slice(0, 10);
-  inputDate.value = '';
+
+  // 오늘이 현재 월에 속하면 오늘로, 아니면 그 달의 첫째 금요일로
+  const todayStr = getTodayStr();
+  if (
+    Number(todayStr.slice(0, 4)) === currentYear &&
+    Number(todayStr.slice(5, 7)) === currentMonth
+  ) {
+    inputDate.value = todayStr;
+  } else {
+    // 첫째 금요일
+    let d = new Date(currentYear, currentMonth - 1, 1);
+    while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
+    inputDate.value = d.toISOString().slice(0, 10);
+  }
 }
 setDatePickerToFridays();
 
@@ -86,10 +108,9 @@ document.getElementById('addBtn').onclick = function() {
   }
   prayerRef.push({ date, role, name }, (err) => {
     if (!err) {
-      document.getElementById('inputDate').value = '';
+      setDatePickerToFridays();
       document.getElementById('inputRole').value = '';
       document.getElementById('inputName').value = '';
-      setDatePickerToFridays();
       fetchAndRenderList();
     }
   });
@@ -255,7 +276,6 @@ function fetchAndRenderList() {
 }
 fetchAndRenderList();
 
-// 모두 열기/닫기
 document.getElementById('expand-all').onclick = () => {
   document.querySelectorAll('.content').forEach(c => c.classList.add('expanded'));
   document.querySelectorAll('.toggle-icon').forEach(i => i.classList.add('rotated'));
@@ -265,7 +285,6 @@ document.getElementById('collapse-all').onclick = () => {
   document.querySelectorAll('.toggle-icon').forEach(i => i.classList.remove('rotated'));
 };
 
-// 아코디언 토글 (날짜 문자열 기반)
 document.addEventListener('click', function(e) {
   if (e.target.closest('.date-header')) {
     const header = e.target.closest('.date-header');
@@ -326,7 +345,6 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// 유튜브 입력 시 미리보기
 document.addEventListener('input', function(e) {
   if (e.target.classList.contains('youtube-input')) {
     handleYoutubePreview(e.target);
