@@ -137,6 +137,7 @@ function fetchAndRenderList() {
             '찬양인도': [],
             '싱어': [],
             '메인건반': [],
+            '세컨건반': [],
             '드럼': [],
             '베이스': [],
             '엔지니어': []
@@ -182,6 +183,11 @@ function fetchAndRenderList() {
                         <button class="delete-btn" data-key="${obj.key}" data-role="메인건반" data-name="${obj.name}">삭제</button>
                       </span>
                     `).join('')}
+                    ${roles['세컨건반'].map(obj => `
+                      <span class="member-tag">${obj.name} (세컨건반)
+                        <button class="delete-btn" data-key="${obj.key}" data-role="세컨건반" data-name="${obj.name}">삭제</button>
+                      </span>
+                    `).join('')}
                     ${roles['드럼'].map(obj => `
                       <span class="member-tag">${obj.name} (드럼)
                         <button class="delete-btn" data-key="${obj.key}" data-role="드럼" data-name="${obj.name}">삭제</button>
@@ -192,7 +198,7 @@ function fetchAndRenderList() {
                         <button class="delete-btn" data-key="${obj.key}" data-role="베이스" data-name="${obj.name}">삭제</button>
                       </span>
                     `).join('')}
-                    ${(!roles['메인건반'].length && !roles['드럼'].length && !roles['베이스'].length) ? '<span style="color:#bbb;">없음</span>' : ''}
+                    ${(!roles['메인건반'].length && !roles['세컨건반'].length && !roles['드럼'].length && !roles['베이스'].length) ? '<span style="color:#bbb;">없음</span>' : ''}
                   </div>
                 </div>
                 <div class="role-group">
