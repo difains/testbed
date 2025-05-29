@@ -47,26 +47,29 @@ document.getElementById('nextMonthBtn').onclick = () => {
   fetchAndRenderList();
 };
 
-// 5. 금요일만 선택 가능하게 min/max/step 설정 및 안내
-function getFirstFriday(year, month) {
-  const firstDay = new Date(year, month - 1, 1);
-  const firstFriday = new Date(year, month - 1, 1 + ((5 - firstDay.getDay() + 7) % 7));
-  return firstFriday;
-}
-function getLastFriday(year, month) {
-  const lastDay = new Date(year, month, 0);
-  const lastFriday = new Date(year, month, 0 - ((lastDay.getDay() - 5 + 7) % 7));
-  return lastFriday;
-}
+// 5. 금요일만 선택 가능하게 min/max 설정
 function setDatePickerToFridays() {
   const inputDate = document.getElementById('inputDate');
-  const min = getFirstFriday(currentYear, currentMonth);
-  const max = getLastFriday(currentYear, currentMonth);
+  // 이번 달 1일~말일까지 선택 가능
+  const min = new Date(currentYear, currentMonth - 1, 1);
+  const max = new Date(currentYear, currentMonth, 0);
   inputDate.min = min.toISOString().slice(0, 10);
   inputDate.max = max.toISOString().slice(0, 10);
   inputDate.value = '';
 }
 setDatePickerToFridays();
+
+// 날짜 선택 시 금요일이 아니면 alert
+document.getElementById('inputDate').addEventListener('change', function() {
+  const val = this.value;
+  if (val) {
+    const d = new Date(val);
+    if (d.getDay() !== 5) {
+      alert('매월 금요일만 선택이 가능합니다');
+      this.value = '';
+    }
+  }
+});
 
 // 6. 입력 및 저장 (금요일만, 입력값 검증, 추가 즉시 리스트 반영)
 document.getElementById('addBtn').onclick = function() {
@@ -74,7 +77,6 @@ document.getElementById('addBtn').onclick = function() {
   const role = document.getElementById('inputRole').value;
   const name = document.getElementById('inputName').value.trim();
 
-  // 입력값 체크
   if (!date || !role || !name) {
     alert('날짜, 역할, 이름을 모두 입력해 주세요!');
     return;
