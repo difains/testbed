@@ -10,7 +10,8 @@ const firebaseConfig = {
   appId: "1:428973129250:web:bdb74560e9e8f752fed47b",
   measurementId: "G-3CN4ESPNJ7"
 };
-
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
 // 2. Firebase 초기화
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
