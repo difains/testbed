@@ -1,18 +1,16 @@
 // 1. Firebase 설정 (자신의 firebaseConfig로 교체)
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDZ07GNmuDrtbca1t-D4elMZM8_JRWrE7E",
   authDomain: "test-250529.firebaseapp.com",
   databaseURL: "https://test-250529-default-rtdb.firebaseio.com",
   projectId: "test-250529",
-  storageBucket: "test-250529.firebasestorage.app",
+  storageBucket: "test-250529.appspot.com", // .appspot.com으로 수정
   messagingSenderId: "428973129250",
   appId: "1:428973129250:web:bdb74560e9e8f752fed47b",
   measurementId: "G-3CN4ESPNJ7"
 };
-firebase.initializeApp(firebaseConfig);
-var db = firebase.database();
-// 2. Firebase 초기화
+
+// 2. Firebase 초기화 (한 번만!)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const prayerRef = db.ref('prayerList');
@@ -34,6 +32,7 @@ document.getElementById('prevMonthBtn').onclick = () => {
     currentYear--;
   }
   updateMonthTitle();
+  setDatePickerToFridays();
   fetchAndRenderList();
 };
 document.getElementById('nextMonthBtn').onclick = () => {
@@ -43,18 +42,17 @@ document.getElementById('nextMonthBtn').onclick = () => {
     currentYear++;
   }
   updateMonthTitle();
+  setDatePickerToFridays();
   fetchAndRenderList();
 };
 
 // 5. 금요일만 선택 가능하게 min/max/step 설정 및 안내
 function getFirstFriday(year, month) {
-  // month: 1~12
   const firstDay = new Date(year, month - 1, 1);
   const firstFriday = new Date(year, month - 1, 1 + ((5 - firstDay.getDay() + 7) % 7));
   return firstFriday;
 }
 function getLastFriday(year, month) {
-  // month: 1~12
   const lastDay = new Date(year, month, 0);
   const lastFriday = new Date(year, month, 0 - ((lastDay.getDay() - 5 + 7) % 7));
   return lastFriday;
@@ -68,9 +66,6 @@ function setDatePickerToFridays() {
   inputDate.value = '';
 }
 setDatePickerToFridays();
-
-document.getElementById('prevMonthBtn').addEventListener('click', setDatePickerToFridays);
-document.getElementById('nextMonthBtn').addEventListener('click', setDatePickerToFridays);
 
 // 6. 입력 및 저장 (금요일만, 입력값 검증, 추가 즉시 리스트 반영)
 document.getElementById('addBtn').onclick = function() {
