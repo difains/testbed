@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2025년 금요기도회 섬김이 리스트</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <!-- 입력 폼이 맨 위 -->
+    <div class="input-section">
+      <input type="date" id="inputDate" />
+      <select id="inputRole">
+        <option value="">역할 선택</option>
+        <option value="찬양인도">찬양인도</option>
+        <option value="싱어">싱어</option>
+        <option value="메인건반">메인건반</option>
+        <option value="드럼">드럼</option>
+        <option value="베이스">베이스</option>
+        <option value="엔지니어">엔지니어</option>
+      </select>
+      <input type="text" id="inputName" placeholder="이름 입력"/>
+      <button id="addBtn">추가</button>
+    </div>
+
+    <!-- 월 이동/모두 열기/닫기 컨트롤 -->
+    <div class="header">
+      <button id="prevMonthBtn" class="month-btn">◀</button>
+      <span id="monthTitle">2025년 6월</span>
+      <button id="nextMonthBtn" class="month-btn">▶</button>
+    </div>
+    <div class="controls">
+      <button id="expand-all" class="control-btn">📂 모두 열기</button>
+      <button id="collapse-all" class="control-btn">📁 모두 닫기</button>
+    </div>
+
+    <!-- 리스트가 입력폼 아래에 표시됨 -->
+    <div id="schedule-container">
+      <!-- 리스트가 여기에 표시됩니다 -->
+    </div>
+    <div class="footer">
+      섬김에 늘 감사합니다. | 💝 사랑으로 섬기는 교회
+    </div>
+    <div id="alertBox" style="display:none; color:#d63384; text-align:center; margin:10px 0;"></div>
+  </div>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
