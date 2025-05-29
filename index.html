@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- 입력 폼이 맨 위 -->
     <div class="input-section">
       <input type="date" id="inputDate" />
       <select id="inputRole">
@@ -23,8 +22,6 @@
       <input type="text" id="inputName" placeholder="이름 입력"/>
       <button id="addBtn">추가</button>
     </div>
-
-    <!-- 월 이동/모두 열기/닫기 컨트롤 -->
     <div class="header">
       <button id="prevMonthBtn" class="month-btn">◀</button>
       <span id="monthTitle">2025년 6월</span>
@@ -34,16 +31,11 @@
       <button id="expand-all" class="control-btn">📂 모두 열기</button>
       <button id="collapse-all" class="control-btn">📁 모두 닫기</button>
     </div>
-
-    <!-- 리스트가 입력폼 아래에 표시됨 -->
-    <div id="schedule-container">
-      <!-- 리스트가 여기에 표시됩니다 -->
-    </div>
+    <div id="schedule-container"></div>
     <div class="footer">
       섬김에 늘 감사합니다. | 💝 사랑으로 섬기는 교회
     </div>
   </div>
-  <!-- Firebase 라이브러리 CDN 반드시 추가 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="script.js"></script>

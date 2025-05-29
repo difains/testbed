@@ -129,7 +129,8 @@ function fetchAndRenderList() {
       youtubeRef.once('value', youtubeSnap => {
         const youtubes = youtubeSnap.val() || {};
 
-        dates.forEach((date, idx) => {
+        dates.forEach((date) => {
+          const dateIndex = date.replace(/-/g,'');
           const setlistValue = setlists[date] || '';
           const youtubeValue = youtubes[date] || '';
           const roles = {
@@ -145,14 +146,13 @@ function fetchAndRenderList() {
           });
           const itemDiv = document.createElement('div');
           itemDiv.className = 'schedule-item';
-          itemDiv.style.animationDelay = `${idx * 0.1}s`;
           itemDiv.innerHTML = `
-            <div class="date-header" data-index="${idx}">
+            <div class="date-header" data-index="${dateIndex}">
               <div class="date">${date}</div>
               <div class="event-type">금요기도회</div>
               <div class="toggle-icon">▼</div>
             </div>
-            <div class="content" id="content-${idx}">
+            <div class="content" id="content-${dateIndex}">
               <div class="leader-section">
                 <div class="leader-title">찬양인도</div>
                 <div class="leader-name ${roles['찬양인도'].length ? '' : 'leader-empty'}">
@@ -209,14 +209,14 @@ function fetchAndRenderList() {
               <div class="additional-info">
                 <div class="info-section">
                   <div class="info-title">📋 콘티 리스트</div>
-                  <textarea class="setlist-area" placeholder="찬양 순서를 입력하세요..." id="setlist-${date.replace(/-/g,'')}" data-date="${date}">${setlistValue}</textarea>
+                  <textarea class="setlist-area" placeholder="찬양 순서를 입력하세요..." id="setlist-${dateIndex}" data-date="${date}">${setlistValue}</textarea>
                   <button class="save-btn" data-type="setlist" data-date="${date}">저장</button>
                 </div>
                 <div class="info-section">
                   <div class="info-title">🎬 참고 유튜브</div>
-                  <input type="url" class="youtube-input" placeholder="유튜브 링크를 입력하세요" id="youtube-${date.replace(/-/g,'')}" data-date="${date}" value="${youtubeValue}">
+                  <input type="url" class="youtube-input" placeholder="유튜브 링크를 입력하세요" id="youtube-${dateIndex}" data-date="${date}" value="${youtubeValue}">
                   <button class="save-btn" data-type="youtube" data-date="${date}">저장</button>
-                  <div class="youtube-preview" id="youtube-preview-${date.replace(/-/g,'')}">
+                  <div class="youtube-preview" id="youtube-preview-${dateIndex}">
                     <span>🔗 링크가 입력되면 미리보기가 표시됩니다</span>
                   </div>
                 </div>
@@ -231,13 +231,16 @@ function fetchAndRenderList() {
             handleYoutubePreview(youtubeInput);
           }
         });
-        loadSavedData();
         setTimeout(() => {
-          const firstContent = document.getElementById('content-0');
-          const firstIcon = document.querySelector('.toggle-icon');
-          if (firstContent && firstIcon) {
-            firstContent.classList.add('expanded');
-            firstIcon.classList.add('rotated');
+          // 첫 번째 자동 펼침
+          if (dates.length > 0) {
+            const firstIndex = dates[0].replace(/-/g,'');
+            const firstContent = document.getElementById(`content-${firstIndex}`);
+            const firstIcon = document.querySelector(`.date-header[data-index="${firstIndex}"] .toggle-icon`);
+            if (firstContent && firstIcon) {
+              firstContent.classList.add('expanded');
+              firstIcon.classList.add('rotated');
+            }
           }
         }, 200);
       });
@@ -256,12 +259,12 @@ document.getElementById('collapse-all').onclick = () => {
   document.querySelectorAll('.toggle-icon').forEach(i => i.classList.remove('rotated'));
 };
 
-// 아코디언 토글
+// 아코디언 토글 (날짜 문자열 기반)
 document.addEventListener('click', function(e) {
   if (e.target.closest('.date-header')) {
     const header = e.target.closest('.date-header');
-    const idx = header.dataset.index;
-    const content = document.getElementById(`content-${idx}`);
+    const dateIndex = header.getAttribute('data-index');
+    const content = document.getElementById(`content-${dateIndex}`);
     const icon = header.querySelector('.toggle-icon');
     const isExpanded = content.classList.contains('expanded');
     if (isExpanded) {
@@ -350,10 +353,6 @@ function handleYoutubePreview(input) {
     preview.onclick = null;
     preview.innerHTML = '<span>🔗 링크가 입력되면 미리보기가 표시됩니다</span>';
   }
-}
-
-function loadSavedData() {
-  // 불필요(콘티/유튜브는 DB에서 불러옴)
 }
 
 function isValidYouTubeUrl(url) {
