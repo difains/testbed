@@ -1,12 +1,14 @@
 // 1. Firebase 설정 (자신의 firebaseConfig로 교체)
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "YOUR_DATABASE_URL",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET.appspot.com",
-  messagingSenderId: "YOUR_MSG_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDZ07GNmuDrtbca1t-D4elMZM8_JRWrE7E",
+  authDomain: "test-250529.firebaseapp.com",
+  databaseURL: "https://test-250529-default-rtdb.firebaseio.com",
+  projectId: "test-250529",
+  storageBucket: "test-250529.firebasestorage.app",
+  messagingSenderId: "428973129250",
+  appId: "1:428973129250:web:bdb74560e9e8f752fed47b",
+  measurementId: "G-3CN4ESPNJ7"
 };
 
 // 2. Firebase 초기화 (한 번만!)
