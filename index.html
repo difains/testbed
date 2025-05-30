@@ -40,6 +40,8 @@
                 <li><a href="#" onclick="showScreen('dashboard')">대시보드</a></li>
                 <li><a href="#" onclick="showScreen('studentReg')">학생 등록</a></li>
                 <li><a href="#" onclick="showScreen('teacherReg')">선생님 등록</a></li>
+                <li><a href="#" onclick="showScreen('studentList')">학생 리스트</a></li>
+                <li><a href="#" onclick="showScreen('teacherList')">선생님 리스트</a></li>
                 <li><a href="#" onclick="logout()">로그아웃</a></li>
             </ul>
         </nav>
@@ -141,7 +143,7 @@
                 
                 <button type="submit">등록</button>
             </form>
-            <div id="studentList"></div>
+            <div id="studentRegList"></div>
         </div>
 
         <!-- 선생님 등록 화면 -->
@@ -169,7 +171,43 @@
                 
                 <button type="submit">등록</button>
             </form>
-            <div id="teacherList"></div>
+            <div id="teacherRegList"></div>
+        </div>
+
+        <!-- 학생 리스트 화면 -->
+        <div id="studentListScreen" class="screen">
+            <div class="search-container">
+                <input type="text" id="studentSearch" placeholder="학생 이름으로 검색..." />
+                <button onclick="searchStudents()">검색</button>
+            </div>
+            <div id="studentListContainer"></div>
+        </div>
+
+        <!-- 선생님 리스트 화면 -->
+        <div id="teacherListScreen" class="screen">
+            <div class="search-container">
+                <input type="text" id="teacherSearch" placeholder="선생님 이름으로 검색..." />
+                <button onclick="searchTeachers()">검색</button>
+            </div>
+            <div id="teacherListContainer"></div>
+        </div>
+
+        <!-- 개별 출석 내역 모달 -->
+        <div id="attendanceModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h3 id="modalTitle"></h3>
+                <div class="modal-controls">
+                    <select id="modalPeriod">
+                        <option value="year">년별</option>
+                        <option value="month">월별</option>
+                        <option value="week">주일별</option>
+                    </select>
+                    <input type="date" id="modalDate" />
+                    <button onclick="loadPersonalAttendance()">조회</button>
+                </div>
+                <div id="modalContent"></div>
+            </div>
         </div>
     </div>
 

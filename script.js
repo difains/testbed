@@ -17,6 +17,10 @@ const database = firebase.database();
 // 전역 변수
 let currentUser = null;
 let currentScreen = 'attendance';
+let allStudents = {};
+let allTeachers = {};
+let currentModalPerson = null;
+let currentModalType = null;
 
 // 로그인 함수
 function login() {
@@ -28,8 +32,7 @@ function login() {
         document.getElementById('loginScreen').classList.remove('active');
         document.getElementById('mainScreens').classList.remove('hidden');
         showScreen('attendance');
-        loadStudents();
-        loadTeachers();
+        loadAllData();
     } else {
         alert('아이디 또는 패스워드가 올바르지 않습니다.');
     }
@@ -43,6 +46,12 @@ function logout() {
     document.getElementById('navMenu').classList.remove('active');
     document.getElementById('loginId').value = '';
     document.getElementById('loginPassword').value = '';
+}
+
+// 모든 데이터 로드
+function loadAllData() {
+    loadStudents();
+    loadTeachers();
 }
 
 // 화면 전환 함수
@@ -59,7 +68,9 @@ function showScreen(screenName) {
         'attendance': '출석체크',
         'dashboard': '대시보드',
         'studentReg': '학생 등록',
-        'teacherReg': '선생님 등록'
+        'teacherReg': '선생님 등록',
+        'studentList': '학생 리스트',
+        'teacherList': '선생님 리스트'
     };
     document.getElementById('pageTitle').textContent = titles[screenName];
     
@@ -73,7 +84,11 @@ function showScreen(screenName) {
         setTodayDate();
     } else if (screenName === 'dashboard') {
         setTodayDate('dashboardDate');
-        loadDashboard(); // 대시보드 진입 시 자동 로드
+        loadDashboard();
+    } else if (screenName === 'studentList') {
+        displayAllStudents();
+    } else if (screenName === 'teacherList') {
+        displayAllTeachers();
     }
 }
 
@@ -99,7 +114,223 @@ function switchTab(tabName) {
 function setTodayDate(elementId = 'attendanceDate') {
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
-    document.getElementById(elementId).value = dateString;
+    if (document.getElementById(elementId)) {
+        document.getElementById(elementId).value = dateString;
+    }
+}
+
+// 학생 목록 로드
+function loadStudents() {
+    database.ref('students').on('value', (snapshot) => {
+        allStudents = snapshot.val() || {};
+        displayStudentRegList(allStudents);
+        if (currentScreen === 'studentList') {
+            displayAllStudents();
+        }
+    });
+}
+
+// 선생님 목록 로드
+function loadTeachers() {
+    database.ref('teachers').on('value', (snapshot) => {
+        allTeachers = snapshot.val() || {};
+        displayTeacherRegList(allTeachers);
+        if (currentScreen === 'teacherList') {
+            displayAllTeachers();
+        }
+    });
+}
+
+// 학생 등록 목록 표시
+function displayStudentRegList(students) {
+    const listContainer = document.getElementById('studentRegList');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    
+    Object.values(students).forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${student.name}</h4>
+            <p>학년: ${student.grade || '미설정'}</p>
+            <p>전화번호: ${student.phone || '미설정'}</p>
+            <p>등록일: ${student.registrationDate || '미설정'}</p>
+        `;
+        listContainer.appendChild(div);
+    });
+}
+
+// 선생님 등록 목록 표시
+function displayTeacherRegList(teachers) {
+    const listContainer = document.getElementById('teacherRegList');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    
+    Object.values(teachers).forEach(teacher => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${teacher.name}</h4>
+            <p>전화번호: ${teacher.phone || '미설정'}</p>
+            <p>소속지회: ${teacher.district || '미설정'}</p>
+            <p>시작일: ${teacher.startDate || '미설정'}</p>
+        `;
+        listContainer.appendChild(div);
+    });
+}
+
+// 전체 학생 목록 표시
+function displayAllStudents() {
+    const container = document.getElementById('studentListContainer');
+    container.innerHTML = '';
+    
+    Object.values(allStudents).forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${student.name}</h4>
+            <p>학년: ${student.grade || '미설정'}</p>
+            <p>전화번호: ${student.phone || '미설정'}</p>
+            <p>등록일: ${student.registrationDate || '미설정'}</p>
+            <button class="view-attendance" onclick="openAttendanceModal('${student.id}', 'student', '${student.name}')">출석내역</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 전체 선생님 목록 표시
+function displayAllTeachers() {
+    const container = document.getElementById('teacherListContainer');
+    container.innerHTML = '';
+    
+    Object.values(allTeachers).forEach(teacher => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${teacher.name}</h4>
+            <p>전화번호: ${teacher.phone || '미설정'}</p>
+            <p>소속지회: ${teacher.district || '미설정'}</p>
+            <p>시작일: ${teacher.startDate || '미설정'}</p>
+            <button class="view-attendance" onclick="openAttendanceModal('${teacher.id}', 'teacher', '${teacher.name}')">출석내역</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 학생 검색
+function searchStudents() {
+    const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+    const container = document.getElementById('studentListContainer');
+    container.innerHTML = '';
+    
+    const filteredStudents = Object.values(allStudents).filter(student => 
+        student.name.toLowerCase().includes(searchTerm)
+    );
+    
+    filteredStudents.forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${student.name}</h4>
+            <p>학년: ${student.grade || '미설정'}</p>
+            <p>전화번호: ${student.phone || '미설정'}</p>
+            <p>등록일: ${student.registrationDate || '미설정'}</p>
+            <button class="view-attendance" onclick="openAttendanceModal('${student.id}', 'student', '${student.name}')">출석내역</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 선생님 검색
+function searchTeachers() {
+    const searchTerm = document.getElementById('teacherSearch').value.toLowerCase();
+    const container = document.getElementById('teacherListContainer');
+    container.innerHTML = '';
+    
+    const filteredTeachers = Object.values(allTeachers).filter(teacher => 
+        teacher.name.toLowerCase().includes(searchTerm)
+    );
+    
+    filteredTeachers.forEach(teacher => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${teacher.name}</h4>
+            <p>전화번호: ${teacher.phone || '미설정'}</p>
+            <p>소속지회: ${teacher.district || '미설정'}</p>
+            <p>시작일: ${teacher.startDate || '미설정'}</p>
+            <button class="view-attendance" onclick="openAttendanceModal('${teacher.id}', 'teacher', '${teacher.name}')">출석내역</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// 출석 내역 모달 열기
+function openAttendanceModal(personId, type, name) {
+    currentModalPerson = personId;
+    currentModalType = type;
+    
+    document.getElementById('modalTitle').textContent = `${name} 출석 내역`;
+    document.getElementById('attendanceModal').style.display = 'block';
+    setTodayDate('modalDate');
+    loadPersonalAttendance();
+}
+
+// 모달 닫기
+function closeModal() {
+    document.getElementById('attendanceModal').style.display = 'none';
+    currentModalPerson = null;
+    currentModalType = null;
+}
+
+// 개인 출석 내역 로드
+function loadPersonalAttendance() {
+    if (!currentModalPerson || !currentModalType) return;
+    
+    const period = document.getElementById('modalPeriod').value;
+    const date = document.getElementById('modalDate').value;
+    
+    if (!date) {
+        alert('날짜를 선택해주세요.');
+        return;
+    }
+    
+    const dates = getDateRange(period, date);
+    const path = currentModalType === 'student' ? 'attendance/students' : 'attendance/teachers';
+    
+    database.ref(path).once('value', (snapshot) => {
+        const attendanceData = snapshot.val() || {};
+        displayPersonalAttendance(attendanceData, dates);
+    });
+}
+
+// 개인 출석 내역 표시
+function displayPersonalAttendance(attendanceData, dates) {
+    const container = document.getElementById('modalContent');
+    container.innerHTML = '';
+    
+    if (dates.length === 0) {
+        container.innerHTML = '<p>해당 기간에 출석 데이터가 없습니다.</p>';
+        return;
+    }
+    
+    dates.forEach(date => {
+        const dayData = attendanceData[date];
+        const status = dayData && dayData[currentModalPerson] ? dayData[currentModalPerson] : '미체크';
+        
+        const div = document.createElement('div');
+        div.className = 'attendance-record';
+        div.innerHTML = `
+            <span class="attendance-date">${date}</span>
+            <span class="attendance-status ${status}">${
+                status === 'present' ? '출석' : 
+                status === 'absent' ? '결석' : '미체크'
+            }</span>
+        `;
+        container.appendChild(div);
+    });
 }
 
 // 대시보드 로드 (개선된 버전)
@@ -334,120 +565,6 @@ function generateGradeStatsHTML(gradeStats) {
     return html || '<p>데이터가 없습니다.</p>';
 }
 
-// DOM 로드 완료 후 이벤트 리스너 등록
-document.addEventListener('DOMContentLoaded', function() {
-    // 학생 등록 폼
-    document.getElementById('studentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const studentData = {
-            name: formData.get('name'),
-            grade: formData.get('grade'),
-            infantBaptism: formData.get('infantBaptism') === 'on',
-            baptism: formData.get('baptism') === 'on',
-            confirmation: formData.get('confirmation') === 'on',
-            phone: formData.get('phone'),
-            fatherName: formData.get('fatherName'),
-            motherName: formData.get('motherName'),
-            parentPhone: formData.get('parentPhone'),
-            registrationDate: formData.get('registrationDate'),
-            id: Date.now().toString()
-        };
-        
-        database.ref('students/' + studentData.id).set(studentData)
-            .then(() => {
-                alert('학생이 등록되었습니다.');
-                e.target.reset();
-                loadStudents();
-            })
-            .catch(error => {
-                alert('등록 중 오류가 발생했습니다: ' + error.message);
-            });
-    });
-
-    // 선생님 등록 폼
-    document.getElementById('teacherForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const teacherData = {
-            name: formData.get('name'),
-            phone: formData.get('phone'),
-            district: formData.get('district'),
-            startDate: formData.get('startDate'),
-            id: Date.now().toString()
-        };
-        
-        database.ref('teachers/' + teacherData.id).set(teacherData)
-            .then(() => {
-                alert('선생님이 등록되었습니다.');
-                e.target.reset();
-                loadTeachers();
-            })
-            .catch(error => {
-                alert('등록 중 오류가 발생했습니다: ' + error.message);
-            });
-    });
-
-    // 초기 날짜 설정
-    setTodayDate();
-    setTodayDate('teacherAttendanceDate');
-    setTodayDate('dashboardDate');
-});
-
-// 학생 목록 로드
-function loadStudents() {
-    database.ref('students').on('value', (snapshot) => {
-        const students = snapshot.val() || {};
-        displayStudentList(students);
-    });
-}
-
-// 선생님 목록 로드
-function loadTeachers() {
-    database.ref('teachers').on('value', (snapshot) => {
-        const teachers = snapshot.val() || {};
-        displayTeacherList(teachers);
-    });
-}
-
-// 학생 목록 표시
-function displayStudentList(students) {
-    const listContainer = document.getElementById('studentList');
-    listContainer.innerHTML = '';
-    
-    Object.values(students).forEach(student => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `
-            <h4>${student.name}</h4>
-            <p>학년: ${student.grade || '미설정'}</p>
-            <p>전화번호: ${student.phone || '미설정'}</p>
-            <p>등록일: ${student.registrationDate || '미설정'}</p>
-        `;
-        listContainer.appendChild(div);
-    });
-}
-
-// 선생님 목록 표시
-function displayTeacherList(teachers) {
-    const listContainer = document.getElementById('teacherList');
-    listContainer.innerHTML = '';
-    
-    Object.values(teachers).forEach(teacher => {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.innerHTML = `
-            <h4>${teacher.name}</h4>
-            <p>전화번호: ${teacher.phone || '미설정'}</p>
-            <p>소속지회: ${teacher.district || '미설정'}</p>
-            <p>시작일: ${teacher.startDate || '미설정'}</p>
-        `;
-        listContainer.appendChild(div);
-    });
-}
-
 // 출석 데이터 로드
 function loadAttendanceData() {
     const date = document.getElementById('attendanceDate').value;
@@ -598,18 +715,102 @@ function saveAttendance(type) {
     database.ref(`${path}/${date}`).set(attendanceData)
         .then(() => {
             alert('출석 정보가 저장되었습니다.');
+            // 대시보드가 현재 화면이면 자동 새로고침
+            if (currentScreen === 'dashboard') {
+                loadDashboard();
+            }
         })
         .catch(error => {
             alert('저장 중 오류가 발생했습니다: ' + error.message);
         });
 }
 
+// DOM 로드 완료 후 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', function() {
+    // 학생 등록 폼
+    document.getElementById('studentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const studentData = {
+            name: formData.get('name'),
+            grade: formData.get('grade'),
+            infantBaptism: formData.get('infantBaptism') === 'on',
+            baptism: formData.get('baptism') === 'on',
+            confirmation: formData.get('confirmation') === 'on',
+            phone: formData.get('phone'),
+            fatherName: formData.get('fatherName'),
+            motherName: formData.get('motherName'),
+            parentPhone: formData.get('parentPhone'),
+            registrationDate: formData.get('registrationDate'),
+            id: Date.now().toString()
+        };
+        
+        database.ref('students/' + studentData.id).set(studentData)
+            .then(() => {
+                alert('학생이 등록되었습니다.');
+                e.target.reset();
+            })
+            .catch(error => {
+                alert('등록 중 오류가 발생했습니다: ' + error.message);
+            });
+    });
+
+    // 선생님 등록 폼
+    document.getElementById('teacherForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const teacherData = {
+            name: formData.get('name'),
+            phone: formData.get('phone'),
+            district: formData.get('district'),
+            startDate: formData.get('startDate'),
+            id: Date.now().toString()
+        };
+        
+        database.ref('teachers/' + teacherData.id).set(teacherData)
+            .then(() => {
+                alert('선생님이 등록되었습니다.');
+                e.target.reset();
+            })
+            .catch(error => {
+                alert('등록 중 오류가 발생했습니다: ' + error.message);
+            });
+    });
+
+    // 초기 날짜 설정
+    setTodayDate();
+    setTodayDate('teacherAttendanceDate');
+    setTodayDate('dashboardDate');
+    setTodayDate('modalDate');
+    
+    // 검색 입력 필드에 엔터 키 이벤트 추가
+    document.getElementById('studentSearch').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchStudents();
+        }
+    });
+    
+    document.getElementById('teacherSearch').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchTeachers();
+        }
+    });
+});
+
 // 메뉴 외부 클릭 시 닫기
 document.addEventListener('click', function(e) {
     const navMenu = document.getElementById('navMenu');
     const hamburger = document.querySelector('.hamburger');
+    const modal = document.getElementById('attendanceModal');
     
     if (!navMenu.contains(e.target) && !hamburger.contains(e.target)) {
         navMenu.classList.remove('active');
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    if (e.target === modal) {
+        closeModal();
     }
 });
