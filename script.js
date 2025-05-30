@@ -1,390 +1,412 @@
-// 1. Firebase 설정 (자신의 firebaseConfig로 교체)
+// Firebase 설정
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDZ07GNmuDrtbca1t-D4elMZM8_JRWrE7E",
-  authDomain: "test-250529.firebaseapp.com",
-  databaseURL: "https://test-250529-default-rtdb.firebaseio.com",
-  projectId: "test-250529",
-  storageBucket: "test-250529.firebasestorage.app",
-  messagingSenderId: "428973129250",
-  appId: "1:428973129250:web:bdb74560e9e8f752fed47b",
-  measurementId: "G-3CN4ESPNJ7"
+  apiKey: "AIzaSyCUIxNXpcXpBS2axvk9s9gTh00EvGOKiSI",
+  authDomain: "seoul-central-youth-system.firebaseapp.com",
+  databaseURL: "https://seoul-central-youth-system-default-rtdb.firebaseio.com",
+  projectId: "seoul-central-youth-system",
+  storageBucket: "seoul-central-youth-system.firebasestorage.app",
+  messagingSenderId: "686027953128",
+  appId: "1:686027953128:web:4c1b931bab361c01770a5d",
+  measurementId: "G-ZY7ZHGC4MP"
 };
 
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
+// Firebase 초기화
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const prayerRef = db.ref('prayerList');
-const setlistRef = db.ref('setlists');
-const youtubeRef = db.ref('youtubeLinks');
+const database = firebase.database();
 
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth() + 1;
+// 전역 변수
+let currentUser = null;
+let currentScreen = 'attendance';
 
-function updateMonthTitle() {
-  document.getElementById('monthTitle').textContent = `${currentYear}년 ${currentMonth}월`;
-}
-updateMonthTitle();
-
-// 오늘 날짜를 yyyy-mm-dd로 반환
-function getTodayStr() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-// 월 이동 버튼
-document.getElementById('prevMonthBtn').onclick = () => {
-  currentMonth--;
-  if (currentMonth < 1) {
-    currentMonth = 12;
-    currentYear--;
-  }
-  updateMonthTitle();
-  setDatePickerToFridays();
-  fetchAndRenderList();
-};
-document.getElementById('nextMonthBtn').onclick = () => {
-  currentMonth++;
-  if (currentMonth > 12) {
-    currentMonth = 1;
-    currentYear++;
-  }
-  updateMonthTitle();
-  setDatePickerToFridays();
-  fetchAndRenderList();
-};
-
-// 금요일만 선택 가능하게 min/max 설정 + 오늘 날짜 기본값
-function setDatePickerToFridays() {
-  const inputDate = document.getElementById('inputDate');
-  const min = new Date(currentYear, currentMonth - 1, 1);
-  const max = new Date(currentYear, currentMonth, 0);
-  inputDate.min = min.toISOString().slice(0, 10);
-  inputDate.max = max.toISOString().slice(0, 10);
-
-  // 오늘이 현재 월에 속하면 오늘로, 아니면 그 달의 첫째 금요일로
-  const todayStr = getTodayStr();
-  if (
-    Number(todayStr.slice(0, 4)) === currentYear &&
-    Number(todayStr.slice(5, 7)) === currentMonth
-  ) {
-    inputDate.value = todayStr;
-  } else {
-    // 첫째 금요일
-    let d = new Date(currentYear, currentMonth - 1, 1);
-    while (d.getDay() !== 5) d.setDate(d.getDate() + 1);
-    inputDate.value = d.toISOString().slice(0, 10);
-  }
-}
-setDatePickerToFridays();
-
-document.getElementById('inputDate').addEventListener('change', function() {
-  const val = this.value;
-  if (val) {
-    const d = new Date(val);
-    if (d.getDay() !== 5) {
-      alert('매월 금요일만 선택이 가능합니다');
-      this.value = '';
-    }
-  }
-});
-
-// 추가 버튼
-document.getElementById('addBtn').onclick = function() {
-  const date = document.getElementById('inputDate').value;
-  const role = document.getElementById('inputRole').value;
-  const name = document.getElementById('inputName').value.trim();
-
-  if (!date || !role || !name) {
-    alert('날짜, 역할, 이름을 모두 입력해 주세요!');
-    return;
-  }
-  const selectedDate = new Date(date);
-  if (selectedDate.getDay() !== 5) {
-    alert('매월 금요일만 선택이 가능합니다');
-    return;
-  }
-  prayerRef.push({ date, role, name }, (err) => {
-    if (!err) {
-      setDatePickerToFridays();
-      document.getElementById('inputRole').value = '';
-      document.getElementById('inputName').value = '';
-      fetchAndRenderList();
-    }
-  });
-};
-
-function fetchAndRenderList() {
-  prayerRef.off();
-  prayerRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    const container = document.getElementById('schedule-container');
-    container.innerHTML = '';
-    if (!data) {
-      container.innerHTML = '<div style="color:#888;text-align:center;">데이터가 없습니다.</div>';
-      return;
-    }
-    // 날짜별 역할별 그룹핑, 키도 저장
-    const grouped = {};
-    Object.entries(data).forEach(([key, item]) => {
-      const d = new Date(item.date);
-      if (
-        d.getFullYear() === currentYear &&
-        d.getMonth() + 1 === currentMonth
-      ) {
-        if (!grouped[item.date]) grouped[item.date] = [];
-        grouped[item.date].push({ ...item, _key: key });
-      }
-    });
-    const dates = Object.keys(grouped).sort();
-    if (dates.length === 0) {
-      container.innerHTML = '<div style="color:#888;text-align:center;">데이터가 없습니다.</div>';
-      return;
-    }
-
-    // 콘티/유튜브 데이터 불러오기
-    setlistRef.once('value', setlistSnap => {
-      const setlists = setlistSnap.val() || {};
-      youtubeRef.once('value', youtubeSnap => {
-        const youtubes = youtubeSnap.val() || {};
-
-        dates.forEach((date) => {
-          const dateIndex = date.replace(/-/g,'');
-          const setlistValue = setlists[date] || '';
-          const youtubeValue = youtubes[date] || '';
-          const roles = {
-            '찬양인도': [],
-            '싱어': [],
-            '메인건반': [],
-            '세컨건반': [],
-            '드럼': [],
-            '베이스': [],
-            '엔지니어': []
-          };
-          grouped[date].forEach(item => {
-            if (roles[item.role]) roles[item.role].push({ name: item.name, key: item._key });
-          });
-          const itemDiv = document.createElement('div');
-          itemDiv.className = 'schedule-item';
-          itemDiv.innerHTML = `
-            <div class="date-header" data-index="${dateIndex}">
-              <div class="date">${date}</div>
-              <div class="event-type">금요기도회</div>
-              <div class="toggle-icon">▼</div>
-            </div>
-            <div class="content" id="content-${dateIndex}">
-              <div class="leader-section">
-                <div class="leader-title">찬양인도</div>
-                <div class="leader-name ${roles['찬양인도'].length ? '' : 'leader-empty'}">
-                  ${roles['찬양인도'].map(obj => `
-                    <span class="member-tag">${obj.name}
-                      <button class="delete-btn" data-key="${obj.key}" data-role="찬양인도" data-name="${obj.name}">삭제</button>
-                    </span>
-                  `).join('') || '미정'}
-                </div>
-              </div>
-              <div class="roles-grid">
-                <div class="role-group">
-                  <div class="role-title">🎤 싱어</div>
-                  <div class="member-list">
-                    ${roles['싱어'].map(obj => `
-                      <span class="member-tag">${obj.name}
-                        <button class="delete-btn" data-key="${obj.key}" data-role="싱어" data-name="${obj.name}">삭제</button>
-                      </span>
-                    `).join('') || '<span style="color:#bbb;">없음</span>'}
-                  </div>
-                </div>
-                <div class="role-group">
-                  <div class="role-title">🎹 악기</div>
-                  <div class="member-list">
-                    ${roles['메인건반'].map(obj => `
-                      <span class="member-tag">${obj.name} (메인건반)
-                        <button class="delete-btn" data-key="${obj.key}" data-role="메인건반" data-name="${obj.name}">삭제</button>
-                      </span>
-                    `).join('')}
-                    ${roles['세컨건반'].map(obj => `
-                      <span class="member-tag">${obj.name} (세컨건반)
-                        <button class="delete-btn" data-key="${obj.key}" data-role="세컨건반" data-name="${obj.name}">삭제</button>
-                      </span>
-                    `).join('')}
-                    ${roles['드럼'].map(obj => `
-                      <span class="member-tag">${obj.name} (드럼)
-                        <button class="delete-btn" data-key="${obj.key}" data-role="드럼" data-name="${obj.name}">삭제</button>
-                      </span>
-                    `).join('')}
-                    ${roles['베이스'].map(obj => `
-                      <span class="member-tag">${obj.name} (베이스)
-                        <button class="delete-btn" data-key="${obj.key}" data-role="베이스" data-name="${obj.name}">삭제</button>
-                      </span>
-                    `).join('')}
-                    ${(!roles['메인건반'].length && !roles['세컨건반'].length && !roles['드럼'].length && !roles['베이스'].length) ? '<span style="color:#bbb;">없음</span>' : ''}
-                  </div>
-                </div>
-                <div class="role-group">
-                  <div class="role-title">🔧 엔지니어</div>
-                  <div class="member-list">
-                    ${roles['엔지니어'].map(obj => `
-                      <span class="member-tag">${obj.name}
-                        <button class="delete-btn" data-key="${obj.key}" data-role="엔지니어" data-name="${obj.name}">삭제</button>
-                      </span>
-                    `).join('') || '<span style="color:#bbb;">없음</span>'}
-                  </div>
-                </div>
-              </div>
-              <div class="additional-info">
-                <div class="info-section">
-                  <div class="info-title">📋 콘티 리스트</div>
-                  <textarea class="setlist-area" placeholder="찬양 순서를 입력하세요..." id="setlist-${dateIndex}" data-date="${date}">${setlistValue}</textarea>
-                  <button class="save-btn" data-type="setlist" data-date="${date}">저장</button>
-                </div>
-                <div class="info-section">
-                  <div class="info-title">🎬 참고 유튜브</div>
-                  <input type="url" class="youtube-input" placeholder="유튜브 링크를 입력하세요" id="youtube-${dateIndex}" data-date="${date}" value="${youtubeValue}">
-                  <button class="save-btn" data-type="youtube" data-date="${date}">저장</button>
-                  <div class="youtube-preview" id="youtube-preview-${dateIndex}">
-                    <span>🔗 링크가 입력되면 미리보기가 표시됩니다</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-          container.appendChild(itemDiv);
-
-          // 유튜브 미리보기
-          const youtubeInput = itemDiv.querySelector('.youtube-input');
-          if (youtubeInput && youtubeInput.value) {
-            handleYoutubePreview(youtubeInput);
-          }
-        });
-        setTimeout(() => {
-          // 첫 번째 자동 펼침
-          if (dates.length > 0) {
-            const firstIndex = dates[0].replace(/-/g,'');
-            const firstContent = document.getElementById(`content-${firstIndex}`);
-            const firstIcon = document.querySelector(`.date-header[data-index="${firstIndex}"] .toggle-icon`);
-            if (firstContent && firstIcon) {
-              firstContent.classList.add('expanded');
-              firstIcon.classList.add('rotated');
-            }
-          }
-        }, 200);
-      });
-    });
-  });
-}
-fetchAndRenderList();
-
-document.getElementById('expand-all').onclick = () => {
-  document.querySelectorAll('.content').forEach(c => c.classList.add('expanded'));
-  document.querySelectorAll('.toggle-icon').forEach(i => i.classList.add('rotated'));
-};
-document.getElementById('collapse-all').onclick = () => {
-  document.querySelectorAll('.content').forEach(c => c.classList.remove('expanded'));
-  document.querySelectorAll('.toggle-icon').forEach(i => i.classList.remove('rotated'));
-};
-
-document.addEventListener('click', function(e) {
-  if (e.target.closest('.date-header')) {
-    const header = e.target.closest('.date-header');
-    const dateIndex = header.getAttribute('data-index');
-    const content = document.getElementById(`content-${dateIndex}`);
-    const icon = header.querySelector('.toggle-icon');
-    const isExpanded = content.classList.contains('expanded');
-    if (isExpanded) {
-      content.classList.remove('expanded');
-      icon.classList.remove('rotated');
+// 로그인 함수
+function login() {
+    const id = document.getElementById('loginId').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    if (id === 'admin' && password === '1234') {
+        currentUser = 'admin';
+        document.getElementById('loginScreen').classList.remove('active');
+        document.getElementById('mainScreens').classList.remove('hidden');
+        showScreen('attendance');
+        loadStudents();
+        loadTeachers();
     } else {
-      content.classList.add('expanded');
-      icon.classList.add('rotated');
+        alert('아이디 또는 패스워드가 올바르지 않습니다.');
     }
-  }
-});
+}
 
-// 멤버 태그 클릭 효과
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('member-tag')) {
-    if (navigator.vibrate) navigator.vibrate(50);
-    e.target.style.transform = 'scale(1.1)';
-    setTimeout(() => { e.target.style.transform = ''; }, 200);
-  }
-});
+// 로그아웃 함수
+function logout() {
+    currentUser = null;
+    document.getElementById('loginScreen').classList.add('active');
+    document.getElementById('mainScreens').classList.add('hidden');
+    document.getElementById('navMenu').classList.remove('active');
+    document.getElementById('loginId').value = '';
+    document.getElementById('loginPassword').value = '';
+}
 
-// 삭제 버튼 이벤트
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('delete-btn')) {
-    const key = e.target.getAttribute('data-key');
-    const role = e.target.getAttribute('data-role');
-    const name = e.target.getAttribute('data-name');
-    if (confirm(`정말로 ${name}(${role})을(를) 삭제하시겠습니까?`)) {
-      prayerRef.child(key).remove();
+// 화면 전환 함수
+function showScreen(screenName) {
+    // 모든 화면 숨기기
+    const screens = document.querySelectorAll('#mainScreens .screen');
+    screens.forEach(screen => screen.classList.remove('active'));
+    
+    // 선택된 화면 보이기
+    document.getElementById(screenName + 'Screen').classList.add('active');
+    
+    // 페이지 제목 변경
+    const titles = {
+        'attendance': '출석체크',
+        'dashboard': '대시보드',
+        'studentReg': '학생 등록',
+        'teacherReg': '선생님 등록'
+    };
+    document.getElementById('pageTitle').textContent = titles[screenName];
+    
+    // 메뉴 닫기
+    document.getElementById('navMenu').classList.remove('active');
+    
+    currentScreen = screenName;
+    
+    // 화면별 초기화
+    if (screenName === 'attendance') {
+        setTodayDate();
+    } else if (screenName === 'dashboard') {
+        setTodayDate('dashboardDate');
     }
-  }
+}
+
+// 햄버거 메뉴 토글
+function toggleMenu() {
+    document.getElementById('navMenu').classList.toggle('active');
+}
+
+// 탭 전환
+function switchTab(tabName) {
+    // 탭 버튼 활성화
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // 탭 컨텐츠 전환
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
+    document.getElementById(tabName + 'Tab').classList.add('active');
+}
+
+// 오늘 날짜 설정
+function setTodayDate(elementId = 'attendanceDate') {
+    const today = new Date();
+    const dateString = today.toISOString().split('T')[0];
+    document.getElementById(elementId).value = dateString;
+}
+
+// 학생 등록
+document.getElementById('studentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const studentData = {
+        name: formData.get('name'),
+        grade: formData.get('grade'),
+        infantBaptism: formData.get('infantBaptism') === 'on',
+        baptism: formData.get('baptism') === 'on',
+        confirmation: formData.get('confirmation') === 'on',
+        phone: formData.get('phone'),
+        fatherName: formData.get('fatherName'),
+        motherName: formData.get('motherName'),
+        parentPhone: formData.get('parentPhone'),
+        registrationDate: formData.get('registrationDate'),
+        id: Date.now().toString()
+    };
+    
+    database.ref('students/' + studentData.id).set(studentData)
+        .then(() => {
+            alert('학생이 등록되었습니다.');
+            e.target.reset();
+            loadStudents();
+        })
+        .catch(error => {
+            alert('등록 중 오류가 발생했습니다: ' + error.message);
+        });
 });
 
-// 콘티/유튜브 저장 버튼 이벤트
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('save-btn')) {
-    const type = e.target.getAttribute('data-type');
-    const date = e.target.getAttribute('data-date');
-    if (type === 'setlist') {
-      const textarea = document.querySelector(`.setlist-area[data-date="${date}"]`);
-      if (textarea) {
-        setlistRef.child(date).set(textarea.value || '');
-        alert('콘티 리스트가 저장되었습니다.');
-      }
-    } else if (type === 'youtube') {
-      const input = document.querySelector(`.youtube-input[data-date="${date}"]`);
-      if (input) {
-        youtubeRef.child(date).set(input.value || '');
-        alert('유튜브 링크가 저장되었습니다.');
-        handleYoutubePreview(input);
-      }
+// 선생님 등록
+document.getElementById('teacherForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const teacherData = {
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        district: formData.get('district'),
+        startDate: formData.get('startDate'),
+        id: Date.now().toString()
+    };
+    
+    database.ref('teachers/' + teacherData.id).set(teacherData)
+        .then(() => {
+            alert('선생님이 등록되었습니다.');
+            e.target.reset();
+            loadTeachers();
+        })
+        .catch(error => {
+            alert('등록 중 오류가 발생했습니다: ' + error.message);
+        });
+});
+
+// 학생 목록 로드
+function loadStudents() {
+    database.ref('students').on('value', (snapshot) => {
+        const students = snapshot.val() || {};
+        displayStudentList(students);
+    });
+}
+
+// 선생님 목록 로드
+function loadTeachers() {
+    database.ref('teachers').on('value', (snapshot) => {
+        const teachers = snapshot.val() || {};
+        displayTeacherList(teachers);
+    });
+}
+
+// 학생 목록 표시
+function displayStudentList(students) {
+    const listContainer = document.getElementById('studentList');
+    listContainer.innerHTML = '';
+    
+    Object.values(students).forEach(student => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${student.name}</h4>
+            <p>학년: ${student.grade || '미설정'}</p>
+            <p>전화번호: ${student.phone || '미설정'}</p>
+            <p>등록일: ${student.registrationDate || '미설정'}</p>
+        `;
+        listContainer.appendChild(div);
+    });
+}
+
+// 선생님 목록 표시
+function displayTeacherList(teachers) {
+    const listContainer = document.getElementById('teacherList');
+    listContainer.innerHTML = '';
+    
+    Object.values(teachers).forEach(teacher => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+            <h4>${teacher.name}</h4>
+            <p>전화번호: ${teacher.phone || '미설정'}</p>
+            <p>소속지회: ${teacher.district || '미설정'}</p>
+            <p>시작일: ${teacher.startDate || '미설정'}</p>
+        `;
+        listContainer.appendChild(div);
+    });
+}
+
+// 출석 데이터 로드
+function loadAttendanceData() {
+    const date = document.getElementById('attendanceDate').value;
+    if (!date) {
+        alert('날짜를 선택해주세요.');
+        return;
     }
-  }
-});
+    
+    // 일요일 체크
+    const selectedDate = new Date(date);
+    if (selectedDate.getDay() !== 0) {
+        alert('출석체크는 일요일에만 가능합니다.');
+        return;
+    }
+    
+    database.ref('students').once('value', (snapshot) => {
+        const students = snapshot.val() || {};
+        displayAttendanceList(students, date);
+    });
+}
 
-document.addEventListener('input', function(e) {
-  if (e.target.classList.contains('youtube-input')) {
-    handleYoutubePreview(e.target);
-  }
-});
+// 선생님 출석 데이터 로드
+function loadTeacherAttendanceData() {
+    const date = document.getElementById('teacherAttendanceDate').value;
+    if (!date) {
+        alert('날짜를 선택해주세요.');
+        return;
+    }
+    
+    const selectedDate = new Date(date);
+    if (selectedDate.getDay() !== 0) {
+        alert('출석체크는 일요일에만 가능합니다.');
+        return;
+    }
+    
+    database.ref('teachers').once('value', (snapshot) => {
+        const teachers = snapshot.val() || {};
+        displayTeacherAttendanceList(teachers, date);
+    });
+}
 
-function handleYoutubePreview(input) {
-  const url = input.value;
-  const id = input.id.replace('youtube-', '');
-  const preview = document.getElementById(`youtube-preview-${id}`);
-  if (url && isValidYouTubeUrl(url)) {
-    const videoId = extractYouTubeVideoId(url);
-    if (videoId) {
-      preview.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" 
-               style="width: 60px; height: 45px; border-radius: 4px;">
-          <div>
-            <div style="font-weight: 600; color: #333;">유튜브 영상 연결됨</div>
-            <div style="font-size: 0.75rem; color: #666;">클릭하여 새 탭에서 열기</div>
-          </div>
+// 출석 목록 표시 (학생)
+function displayAttendanceList(students, date) {
+    const container = document.getElementById('studentAttendanceList');
+    container.innerHTML = '';
+    
+    // 학년별 그룹핑
+    const grades = ['중1', '중2', '중3', '고1', '고2', '고3'];
+    
+    grades.forEach(grade => {
+        const gradeStudents = Object.values(students).filter(s => s.grade === grade);
+        if (gradeStudents.length === 0) return;
+        
+        const gradeDiv = document.createElement('div');
+        gradeDiv.className = 'grade-group';
+        
+        const header = document.createElement('div');
+        header.className = 'grade-header';
+        header.textContent = grade;
+        gradeDiv.appendChild(header);
+        
+        gradeStudents.forEach(student => {
+            const studentDiv = document.createElement('div');
+            studentDiv.className = 'student-item';
+            studentDiv.innerHTML = `
+                <div class="student-name">${student.name}</div>
+                <div class="attendance-options">
+                    <label>
+                        <input type="radio" name="attendance_${student.id}" value="present">
+                        출석
+                    </label>
+                    <label>
+                        <input type="radio" name="attendance_${student.id}" value="absent">
+                        결석
+                    </label>
+                </div>
+            `;
+            gradeDiv.appendChild(studentDiv);
+        });
+        
+        container.appendChild(gradeDiv);
+    });
+}
+
+// 선생님 출석 목록 표시
+function displayTeacherAttendanceList(teachers, date) {
+    const container = document.getElementById('teacherAttendanceList');
+    container.innerHTML = '';
+    
+    const teacherDiv = document.createElement('div');
+    teacherDiv.className = 'grade-group';
+    
+    const header = document.createElement('div');
+    header.className = 'grade-header';
+    header.textContent = '선생님';
+    teacherDiv.appendChild(header);
+    
+    Object.values(teachers).forEach(teacher => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'student-item';
+        itemDiv.innerHTML = `
+            <div class="student-name">${teacher.name}</div>
+            <div class="attendance-options">
+                <label>
+                    <input type="radio" name="teacher_attendance_${teacher.id}" value="present">
+                    출석
+                </label>
+                <label>
+                    <input type="radio" name="teacher_attendance_${teacher.id}" value="absent">
+                    결석
+                </label>
+            </div>
+        `;
+        teacherDiv.appendChild(itemDiv);
+    });
+    
+    container.appendChild(teacherDiv);
+}
+
+// 출석 저장
+function saveAttendance(type) {
+    const date = type === 'student' ? 
+        document.getElementById('attendanceDate').value : 
+        document.getElementById('teacherAttendanceDate').value;
+    
+    if (!date) {
+        alert('날짜를 선택해주세요.');
+        return;
+    }
+    
+    const prefix = type === 'student' ? 'attendance_' : 'teacher_attendance_';
+    const radios = document.querySelectorAll(`input[name^="${prefix}"]`);
+    const attendanceData = {};
+    
+    radios.forEach(radio => {
+        if (radio.checked) {
+            const id = radio.name.replace(prefix, '');
+            attendanceData[id] = radio.value;
+        }
+    });
+    
+    if (Object.keys(attendanceData).length === 0) {
+        alert('출석 정보를 선택해주세요.');
+        return;
+    }
+    
+    const path = type === 'student' ? 'attendance/students' : 'attendance/teachers';
+    database.ref(`${path}/${date}`).set(attendanceData)
+        .then(() => {
+            alert('출석 정보가 저장되었습니다.');
+        })
+        .catch(error => {
+            alert('저장 중 오류가 발생했습니다: ' + error.message);
+        });
+}
+
+// 대시보드 로드
+function loadDashboard() {
+    const period = document.getElementById('dashboardPeriod').value;
+    const date = document.getElementById('dashboardDate').value;
+    
+    if (!date) {
+        alert('날짜를 선택해주세요.');
+        return;
+    }
+    
+    // 대시보드 데이터 로드 및 표시 로직
+    // 실제 구현에서는 Firebase에서 출석 데이터를 가져와서 통계를 계산합니다.
+    const container = document.getElementById('dashboardContent');
+    container.innerHTML = `
+        <div class="dashboard-card">
+            <h3>전체 출석 현황</h3>
+            <p>출석: 0명, 결석: 0명</p>
         </div>
-      `;
-      preview.classList.add('show');
-      preview.style.cursor = 'pointer';
-      preview.onclick = () => window.open(url, '_blank');
-    }
-  } else {
-    preview.classList.remove('show');
-    preview.onclick = null;
-    preview.innerHTML = '<span>🔗 링크가 입력되면 미리보기가 표시됩니다</span>';
-  }
+        <div class="dashboard-card">
+            <h3>학년별 출석 현황</h3>
+            <p>데이터를 불러오는 중...</p>
+        </div>
+    `;
 }
 
-function isValidYouTubeUrl(url) {
-  const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-  return pattern.test(url);
-}
-function extractYouTubeVideoId(url) {
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[7].length === 11) ? match[7] : null;
-}
+// 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    setTodayDate();
+    setTodayDate('teacherAttendanceDate');
+    setTodayDate('dashboardDate');
+});
+
+// 메뉴 외부 클릭 시 닫기
+document.addEventListener('click', function(e) {
+    const navMenu = document.getElementById('navMenu');
+    const hamburger = document.querySelector('.hamburger');
+    
+    if (!navMenu.contains(e.target) && !hamburger.contains(e.target)) {
+        navMenu.classList.remove('active');
+    }
+});
