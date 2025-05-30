@@ -12,7 +12,7 @@
     <!-- 로그인 화면 -->
     <div id="loginScreen" class="screen active">
         <div class="login-container">
-            <h1>서울중앙교회 중고등부 출석부 시스템에 오신걸 환영합니다.</h1>
+            <h1>서울중앙교회 중고등부<br/>출석부 시스템에 오신걸 환영합니다.</h1>
             <div class="login-form">
                 <input type="text" id="loginId" placeholder="아이디" />
                 <input type="password" id="loginPassword" placeholder="패스워드" />
@@ -87,24 +87,58 @@
         <!-- 학생 등록 화면 -->
         <div id="studentRegScreen" class="screen">
             <form id="studentForm">
-                <input type="text" name="name" placeholder="이름" required />
-                <select name="grade">
-                    <option value="">학년 선택</option>
-                    <option value="중1">중1</option>
-                    <option value="중2">중2</option>
-                    <option value="중3">중3</option>
-                    <option value="고1">고1</option>
-                    <option value="고2">고2</option>
-                    <option value="고3">고3</option>
-                </select>
-                <label><input type="checkbox" name="infantBaptism" /> 유아세례</label>
-                <label><input type="checkbox" name="baptism" /> 세례</label>
-                <label><input type="checkbox" name="confirmation" /> 입교</label>
-                <input type="tel" name="phone" placeholder="전화번호" />
-                <input type="text" name="fatherName" placeholder="아버지 성함" />
-                <input type="text" name="motherName" placeholder="어머니 성함" />
-                <input type="tel" name="parentPhone" placeholder="부모님 대표 연락처" />
-                <input type="date" name="registrationDate" placeholder="최초 등록일" />
+                <div class="form-group">
+                    <label for="studentName">이름 *</label>
+                    <input type="text" id="studentName" name="name" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="studentGrade">학년</label>
+                    <select id="studentGrade" name="grade">
+                        <option value="">학년 선택</option>
+                        <option value="중1">중1</option>
+                        <option value="중2">중2</option>
+                        <option value="중3">중3</option>
+                        <option value="고1">고1</option>
+                        <option value="고2">고2</option>
+                        <option value="고3">고3</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>세례 정보</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="infantBaptism" /> 유아세례</label>
+                        <label class="checkbox-label"><input type="checkbox" name="baptism" /> 세례</label>
+                        <label class="checkbox-label"><input type="checkbox" name="confirmation" /> 입교</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="studentPhone">전화번호</label>
+                    <input type="tel" id="studentPhone" name="phone" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="fatherName">아버지 성함</label>
+                    <input type="text" id="fatherName" name="fatherName" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="motherName">어머니 성함</label>
+                    <input type="text" id="motherName" name="motherName" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="parentPhone">부모님 대표 연락처</label>
+                    <input type="tel" id="parentPhone" name="parentPhone" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="registrationDate">최초 등록일</label>
+                    <input type="date" id="registrationDate" name="registrationDate" />
+                </div>
+                
                 <button type="submit">등록</button>
             </form>
             <div id="studentList"></div>
@@ -113,10 +147,26 @@
         <!-- 선생님 등록 화면 -->
         <div id="teacherRegScreen" class="screen">
             <form id="teacherForm">
-                <input type="text" name="name" placeholder="이름" required />
-                <input type="tel" name="phone" placeholder="전화번호" />
-                <input type="text" name="district" placeholder="소속지회" />
-                <input type="date" name="startDate" placeholder="중고등부 교사 섬김 시작일" />
+                <div class="form-group">
+                    <label for="teacherName">이름 *</label>
+                    <input type="text" id="teacherName" name="name" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="teacherPhone">전화번호</label>
+                    <input type="tel" id="teacherPhone" name="phone" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="district">소속지회</label>
+                    <input type="text" id="district" name="district" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="startDate">중고등부 교사 섬김 시작일</label>
+                    <input type="date" id="startDate" name="startDate" />
+                </div>
+                
                 <button type="submit">등록</button>
             </form>
             <div id="teacherList"></div>

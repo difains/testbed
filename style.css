@@ -175,7 +175,7 @@ header h2 {
     display: block;
 }
 
-/* 폼 스타일 */
+/* 폼 스타일 개선 */
 form {
     background-color: #404040;
     padding: 20px;
@@ -183,10 +183,22 @@ form {
     margin-bottom: 20px;
 }
 
-form input, form select {
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.form-group input, 
+.form-group select {
     width: 100%;
     padding: 12px;
-    margin-bottom: 15px;
     border: none;
     border-radius: 5px;
     background-color: #555;
@@ -194,19 +206,27 @@ form input, form select {
     font-size: 14px;
 }
 
-form input::placeholder {
+.form-group input::placeholder {
     color: #cccccc;
 }
 
-form label {
+.checkbox-group {
     display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-    color: #ffffff;
+    flex-direction: column;
+    gap: 8px;
 }
 
-form label input[type="checkbox"] {
-    width: auto;
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    margin-bottom: 0 !important;
+    color: #ffffff !important;
+    font-weight: normal !important;
+    font-size: 14px !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto !important;
     margin-right: 10px;
     margin-bottom: 0;
 }
@@ -221,6 +241,7 @@ form button {
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
+    margin-top: 10px;
 }
 
 /* 출석체크 */
@@ -339,6 +360,31 @@ form button {
     margin-bottom: 10px;
 }
 
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.stat-item {
+    background-color: #555;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #cccccc;
+}
+
 /* 리스트 */
 .list-item {
     background-color: #404040;
@@ -381,5 +427,9 @@ form button {
     .dashboard-controls input,
     .dashboard-controls button {
         width: 100%;
+    }
+    
+    .dashboard-stats {
+        grid-template-columns: 1fr;
     }
 }
