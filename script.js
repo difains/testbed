@@ -81,10 +81,10 @@ function showScreen(screenName) {
     
     // 화면별 초기화
     if (screenName === 'attendance') {
-        setTodayDate();
-        setTodayDate('teacherAttendanceDate');
+        setLastSundayDate();
+        setLastSundayDate('teacherAttendanceDate');
     } else if (screenName === 'dashboard') {
-        setTodayDate('dashboardDate');
+        setLastSundayDate('dashboardDate');
         loadDashboard();
     } else if (screenName === 'studentList') {
         displayAllStudents();
@@ -111,14 +111,32 @@ function switchTab(tabName) {
     document.getElementById(tabName + 'Tab').classList.add('active');
 }
 
-// 오늘 날짜 설정
-function setTodayDate(elementId = 'attendanceDate') {
+// 가장 최근 일요일 날짜 설정
+function setLastSundayDate(elementId = 'attendanceDate') {
     const today = new Date();
-    const dateString = today.toISOString().split('T')[0];
+    const dayOfWeek = today.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+    
+    let lastSunday;
+    if (dayOfWeek === 0) {
+        // 오늘이 일요일이면 오늘 날짜
+        lastSunday = new Date(today);
+    } else {
+        // 오늘이 일요일이 아니면 지난 일요일
+        lastSunday = new Date(today);
+        lastSunday.setDate(today.getDate() - dayOfWeek);
+    }
+    
+    const dateString = lastSunday.toISOString().split('T')[0];
     const element = document.getElementById(elementId);
     if (element) {
         element.value = dateString;
     }
+}
+
+// 일요일 체크 함수
+function isSunday(dateString) {
+    const date = new Date(dateString + 'T00:00:00');
+    return date.getDay() === 0;
 }
 
 // 학생 목록 로드
@@ -282,7 +300,7 @@ function openAttendanceModal(personId, type, name) {
     
     document.getElementById('modalTitle').textContent = `${name} 출석 내역`;
     document.getElementById('attendanceModal').style.display = 'block';
-    setTodayDate('modalDate');
+    setLastSundayDate('modalDate');
     loadPersonalAttendance();
 }
 
@@ -321,7 +339,7 @@ function displayPersonalAttendance(attendanceData, dates) {
     container.innerHTML = '';
     
     if (dates.length === 0) {
-        container.innerHTML = '<p>해당 기간에 출석 데이터가 없습니다.</p>';
+        container.innerHTML = '<p>해당 기간에 주일 데이터가 없습니다.</p>';
         return;
     }
     
@@ -332,7 +350,7 @@ function displayPersonalAttendance(attendanceData, dates) {
         const div = document.createElement('div');
         div.className = 'attendance-record';
         div.innerHTML = `
-            <span class="attendance-date">${date}</span>
+            <span class="attendance-date">${date} (주일)</span>
             <span class="attendance-status ${status}">${
                 status === 'present' ? '출석' : 
                 status === 'absent' ? '결석' : '미체크'
@@ -387,9 +405,9 @@ function loadDashboard() {
 function displayDashboard(students, attendance, teachers, teacherAttendance, period, selectedDate) {
     const container = document.getElementById('dashboardContent');
     
-    // 날짜 범위 계산
+    // 날짜 범위 계산 (일요일만)
     const dates = getDateRange(period, selectedDate);
-    console.log('Date range:', dates);
+    console.log('Sunday date range:', dates);
     
     // 전체 출석 통계 계산
     const totalStats = calculateTotalStats(students, attendance, dates);
@@ -444,23 +462,30 @@ function displayDashboard(students, attendance, teachers, teacherAttendance, per
         
         <div class="dashboard-card">
             <h3>조회 정보</h3>
-            <p>조회 기간: ${dates.length}일</p>
-            <p>조회 날짜: ${dates.join(', ')}</p>
+            <p>조회 주일 수: ${dates.length}주</p>
+            <p>조회 주일: ${dates.map(date => date + ' (주일)').join(', ')}</p>
         </div>
     `;
 }
 
-// 날짜 범위 계산 (수정된 버전)
+// 날짜 범위 계산 (일요일만) - 수정된 버전
 function getDateRange(period, selectedDate) {
     const date = new Date(selectedDate + 'T00:00:00');
     const dates = [];
     
     if (period === 'week') {
-        // 선택된 날짜가 포함된 주의 일요일
+        // 선택된 날짜가 포함된 주의 일요일만
         const dayOfWeek = date.getDay();
         const sunday = new Date(date);
-        sunday.setDate(date.getDate() - dayOfWeek);
-        dates.push(sunday.toISOString().split('T')[0]);
+        
+        if (dayOfWeek === 0) {
+            // 선택된 날짜가 일요일이면 그 날짜
+            dates.push(sunday.toISOString().split('T')[0]);
+        } else {
+            // 선택된 날짜가 일요일이 아니면 그 주의 일요일
+            sunday.setDate(date.getDate() - dayOfWeek);
+            dates.push(sunday.toISOString().split('T')[0]);
+        }
     } else if (period === 'month') {
         // 선택된 월의 모든 일요일
         const year = date.getFullYear();
@@ -594,7 +619,7 @@ function generateGradeStatsHTML(gradeStats) {
         }
     });
     
-    return hasData ? html : '<p>해당 기간에 출석 데이터가 없습니다.</p>';
+    return hasData ? html : '<p>해당 기간에 주일 출석 데이터가 없습니다.</p>';
 }
 
 // 출석 데이터 로드
@@ -606,9 +631,8 @@ function loadAttendanceData() {
     }
     
     // 일요일 체크
-    const selectedDate = new Date(date + 'T00:00:00');
-    if (selectedDate.getDay() !== 0) {
-        alert('출석체크는 일요일에만 가능합니다.');
+    if (!isSunday(date)) {
+        alert('주일만 체크가 가능합니다.');
         return;
     }
     
@@ -632,9 +656,9 @@ function loadTeacherAttendanceData() {
         return;
     }
     
-    const selectedDate = new Date(date + 'T00:00:00');
-    if (selectedDate.getDay() !== 0) {
-        alert('출석체크는 일요일에만 가능합니다.');
+    // 일요일 체크
+    if (!isSunday(date)) {
+        alert('주일만 체크가 가능합니다.');
         return;
     }
     
@@ -752,6 +776,12 @@ function saveAttendance(type) {
         return;
     }
     
+    // 일요일 체크
+    if (!isSunday(date)) {
+        alert('주일만 체크가 가능합니다.');
+        return;
+    }
+    
     const prefix = type === 'student' ? 'attendance_' : 'teacher_attendance_';
     const radios = document.querySelectorAll(`input[name^="${prefix}"]`);
     const attendanceData = {};
@@ -844,11 +874,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // 초기 날짜 설정
-    setTodayDate();
-    setTodayDate('teacherAttendanceDate');
-    setTodayDate('dashboardDate');
-    setTodayDate('modalDate');
+    // 초기 날짜 설정 (가장 최근 일요일)
+    setLastSundayDate();
+    setLastSundayDate('teacherAttendanceDate');
+    setLastSundayDate('dashboardDate');
+    setLastSundayDate('modalDate');
     
     // 검색 입력 필드에 엔터 키 이벤트 추가
     document.getElementById('studentSearch').addEventListener('keypress', function(e) {
