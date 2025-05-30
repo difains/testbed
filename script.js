@@ -360,7 +360,7 @@ function displayPersonalAttendance(attendanceData, dates) {
     });
 }
 
-// 대시보드 로드 (수정된 버전)
+// 대시보드 로드 (디버깅 강화 버전)
 function loadDashboard() {
     const period = document.getElementById('dashboardPeriod').value;
     const date = document.getElementById('dashboardDate').value;
@@ -373,7 +373,12 @@ function loadDashboard() {
     const container = document.getElementById('dashboardContent');
     container.innerHTML = '<div class="dashboard-card"><h3>데이터를 불러오는 중...</h3></div>';
     
-    console.log('Loading dashboard for period:', period, 'date:', date);
+    console.log('=== 대시보드 로딩 시작 ===');
+    console.log('Period:', period, 'Selected Date:', date);
+    
+    // 날짜 범위 먼저 계산해서 확인
+    const dates = getDateRange(period, date);
+    console.log('계산된 날짜 범위:', dates);
     
     // 학생 데이터와 출석 데이터를 동시에 로드
     Promise.all([
@@ -387,11 +392,20 @@ function loadDashboard() {
         const teachers = teachersSnapshot.val() || {};
         const teacherAttendance = teacherAttendanceSnapshot.val() || {};
         
-        console.log('Dashboard data loaded:', {
-            students: Object.keys(students).length,
-            attendance: Object.keys(attendance).length,
-            teachers: Object.keys(teachers).length,
-            teacherAttendance: Object.keys(teacherAttendance).length
+        console.log('=== 로드된 데이터 ===');
+        console.log('학생 수:', Object.keys(students).length);
+        console.log('학생 데이터:', students);
+        console.log('출석 데이터 날짜:', Object.keys(attendance));
+        console.log('전체 출석 데이터:', attendance);
+        
+        // 각 날짜별 출석 데이터 상세 확인
+        dates.forEach(date => {
+            if (attendance[date]) {
+                console.log(`${date} 출석 데이터:`, attendance[date]);
+                console.log(`${date} 출석 인원:`, Object.keys(attendance[date]).length);
+            } else {
+                console.log(`${date}: 출석 데이터 없음`);
+            }
         });
         
         displayDashboard(students, attendance, teachers, teacherAttendance, period, date);
@@ -516,26 +530,47 @@ function getDateRange(period, selectedDate) {
     return dates;
 }
 
-// 전체 출석 통계 계산 (수정된 버전)
+// 전체 출석 통계 계산 (디버깅 강화 버전)
 function calculateTotalStats(students, attendance, dates) {
     let totalPresent = 0;
     let totalAbsent = 0;
     let totalDays = 0;
     
+    console.log('=== 통계 계산 시작 ===');
+    console.log('계산할 날짜들:', dates);
+    
     dates.forEach(date => {
+        console.log(`\n--- ${date} 처리 중 ---`);
         if (attendance[date]) {
             totalDays++;
             const dayAttendance = attendance[date];
-            Object.values(dayAttendance).forEach(status => {
-                if (status === 'present') totalPresent++;
-                else if (status === 'absent') totalAbsent++;
+            console.log(`${date} 출석 데이터:`, dayAttendance);
+            
+            Object.entries(dayAttendance).forEach(([studentId, status]) => {
+                console.log(`학생 ID: ${studentId}, 상태: ${status}`);
+                if (status === 'present') {
+                    totalPresent++;
+                    console.log('출석 +1, 현재 총 출석:', totalPresent);
+                } else if (status === 'absent') {
+                    totalAbsent++;
+                    console.log('결석 +1, 현재 총 결석:', totalAbsent);
+                }
             });
+        } else {
+            console.log(`${date}: 출석 데이터 없음`);
         }
     });
     
     const total = totalPresent + totalAbsent;
     const average = totalDays > 0 ? totalPresent / totalDays : 0;
     const rate = total > 0 ? (totalPresent / total) * 100 : 0;
+    
+    console.log('=== 최종 통계 ===');
+    console.log('총 출석:', totalPresent);
+    console.log('총 결석:', totalAbsent);
+    console.log('총 일수:', totalDays);
+    console.log('평균 출석:', average);
+    console.log('출석률:', rate);
     
     return {
         present: totalPresent,
@@ -566,7 +601,7 @@ function calculateTeacherStats(teachers, teacherAttendance, dates) {
     };
 }
 
-// 학년별 통계 계산 (수정된 버전)
+// 학년별 통계 계산 (디버깅 강화 버전)
 function calculateGradeStats(students, attendance, dates) {
     const grades = ['중1', '중2', '중3', '고1', '고2', '고3'];
     const gradeStats = {};
@@ -575,23 +610,34 @@ function calculateGradeStats(students, attendance, dates) {
         gradeStats[grade] = { present: 0, absent: 0 };
     });
     
+    console.log('=== 학년별 통계 계산 ===');
+    console.log('학생 데이터:', students);
+    
     dates.forEach(date => {
         if (attendance[date]) {
             const dayAttendance = attendance[date];
+            console.log(`\n${date} 학년별 처리:`);
+            
             Object.entries(dayAttendance).forEach(([studentId, status]) => {
                 // 학생 ID로 학생 정보 찾기
                 const student = Object.values(students).find(s => s.id === studentId);
+                console.log(`학생 ID ${studentId} 찾기 결과:`, student);
+                
                 if (student && student.grade && gradeStats[student.grade]) {
+                    console.log(`${student.name} (${student.grade}): ${status}`);
                     if (status === 'present') {
                         gradeStats[student.grade].present++;
                     } else if (status === 'absent') {
                         gradeStats[student.grade].absent++;
                     }
+                } else {
+                    console.log(`학생 정보 없음 또는 학년 정보 없음 - ID: ${studentId}`);
                 }
             });
         }
     });
     
+    console.log('학년별 최종 통계:', gradeStats);
     return gradeStats;
 }
 
