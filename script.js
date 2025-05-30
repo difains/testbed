@@ -82,6 +82,7 @@ function showScreen(screenName) {
     // 화면별 초기화
     if (screenName === 'attendance') {
         setTodayDate();
+        setTodayDate('teacherAttendanceDate');
     } else if (screenName === 'dashboard') {
         setTodayDate('dashboardDate');
         loadDashboard();
@@ -114,8 +115,9 @@ function switchTab(tabName) {
 function setTodayDate(elementId = 'attendanceDate') {
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
-    if (document.getElementById(elementId)) {
-        document.getElementById(elementId).value = dateString;
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.value = dateString;
     }
 }
 
@@ -123,6 +125,7 @@ function setTodayDate(elementId = 'attendanceDate') {
 function loadStudents() {
     database.ref('students').on('value', (snapshot) => {
         allStudents = snapshot.val() || {};
+        console.log('Students loaded:', allStudents);
         displayStudentRegList(allStudents);
         if (currentScreen === 'studentList') {
             displayAllStudents();
@@ -134,6 +137,7 @@ function loadStudents() {
 function loadTeachers() {
     database.ref('teachers').on('value', (snapshot) => {
         allTeachers = snapshot.val() || {};
+        console.log('Teachers loaded:', allTeachers);
         displayTeacherRegList(allTeachers);
         if (currentScreen === 'teacherList') {
             displayAllTeachers();
@@ -184,6 +188,8 @@ function displayTeacherRegList(teachers) {
 // 전체 학생 목록 표시
 function displayAllStudents() {
     const container = document.getElementById('studentListContainer');
+    if (!container) return;
+    
     container.innerHTML = '';
     
     Object.values(allStudents).forEach(student => {
@@ -203,6 +209,8 @@ function displayAllStudents() {
 // 전체 선생님 목록 표시
 function displayAllTeachers() {
     const container = document.getElementById('teacherListContainer');
+    if (!container) return;
+    
     container.innerHTML = '';
     
     Object.values(allTeachers).forEach(teacher => {
@@ -302,6 +310,7 @@ function loadPersonalAttendance() {
     
     database.ref(path).once('value', (snapshot) => {
         const attendanceData = snapshot.val() || {};
+        console.log('Personal attendance data:', attendanceData);
         displayPersonalAttendance(attendanceData, dates);
     });
 }
@@ -333,7 +342,7 @@ function displayPersonalAttendance(attendanceData, dates) {
     });
 }
 
-// 대시보드 로드 (개선된 버전)
+// 대시보드 로드 (수정된 버전)
 function loadDashboard() {
     const period = document.getElementById('dashboardPeriod').value;
     const date = document.getElementById('dashboardDate').value;
@@ -345,6 +354,8 @@ function loadDashboard() {
     
     const container = document.getElementById('dashboardContent');
     container.innerHTML = '<div class="dashboard-card"><h3>데이터를 불러오는 중...</h3></div>';
+    
+    console.log('Loading dashboard for period:', period, 'date:', date);
     
     // 학생 데이터와 출석 데이터를 동시에 로드
     Promise.all([
@@ -358,6 +369,13 @@ function loadDashboard() {
         const teachers = teachersSnapshot.val() || {};
         const teacherAttendance = teacherAttendanceSnapshot.val() || {};
         
+        console.log('Dashboard data loaded:', {
+            students: Object.keys(students).length,
+            attendance: Object.keys(attendance).length,
+            teachers: Object.keys(teachers).length,
+            teacherAttendance: Object.keys(teacherAttendance).length
+        });
+        
         displayDashboard(students, attendance, teachers, teacherAttendance, period, date);
     }).catch(error => {
         container.innerHTML = '<div class="dashboard-card"><h3>데이터 로드 중 오류가 발생했습니다.</h3></div>';
@@ -365,12 +383,13 @@ function loadDashboard() {
     });
 }
 
-// 대시보드 표시 함수
+// 대시보드 표시 함수 (수정된 버전)
 function displayDashboard(students, attendance, teachers, teacherAttendance, period, selectedDate) {
     const container = document.getElementById('dashboardContent');
     
     // 날짜 범위 계산
     const dates = getDateRange(period, selectedDate);
+    console.log('Date range:', dates);
     
     // 전체 출석 통계 계산
     const totalStats = calculateTotalStats(students, attendance, dates);
@@ -379,9 +398,11 @@ function displayDashboard(students, attendance, teachers, teacherAttendance, per
     // 학년별 통계 계산
     const gradeStats = calculateGradeStats(students, attendance, dates);
     
+    console.log('Statistics calculated:', { totalStats, teacherStats, gradeStats });
+    
     container.innerHTML = `
         <div class="dashboard-card">
-            <h3>전체 출석 현황</h3>
+            <h3>전체 출석 현황 (${period === 'year' ? '년별' : period === 'month' ? '월별' : '주일별'})</h3>
             <div class="dashboard-stats">
                 <div class="stat-item">
                     <div class="stat-number">${totalStats.present}</div>
@@ -420,21 +441,26 @@ function displayDashboard(students, attendance, teachers, teacherAttendance, per
                 </div>
             </div>
         </div>
+        
+        <div class="dashboard-card">
+            <h3>조회 정보</h3>
+            <p>조회 기간: ${dates.length}일</p>
+            <p>조회 날짜: ${dates.join(', ')}</p>
+        </div>
     `;
 }
 
-// 날짜 범위 계산
+// 날짜 범위 계산 (수정된 버전)
 function getDateRange(period, selectedDate) {
-    const date = new Date(selectedDate);
+    const date = new Date(selectedDate + 'T00:00:00');
     const dates = [];
     
     if (period === 'week') {
-        // 선택된 날짜가 포함된 주의 일요일들만
+        // 선택된 날짜가 포함된 주의 일요일
+        const dayOfWeek = date.getDay();
         const sunday = new Date(date);
-        sunday.setDate(date.getDate() - date.getDay());
-        if (sunday.getDay() === 0) {
-            dates.push(sunday.toISOString().split('T')[0]);
-        }
+        sunday.setDate(date.getDate() - dayOfWeek);
+        dates.push(sunday.toISOString().split('T')[0]);
     } else if (period === 'month') {
         // 선택된 월의 모든 일요일
         const year = date.getFullYear();
@@ -465,7 +491,7 @@ function getDateRange(period, selectedDate) {
     return dates;
 }
 
-// 전체 출석 통계 계산
+// 전체 출석 통계 계산 (수정된 버전)
 function calculateTotalStats(students, attendance, dates) {
     let totalPresent = 0;
     let totalAbsent = 0;
@@ -473,12 +499,12 @@ function calculateTotalStats(students, attendance, dates) {
     
     dates.forEach(date => {
         if (attendance[date]) {
+            totalDays++;
             const dayAttendance = attendance[date];
             Object.values(dayAttendance).forEach(status => {
                 if (status === 'present') totalPresent++;
                 else if (status === 'absent') totalAbsent++;
             });
-            totalDays++;
         }
     });
     
@@ -494,7 +520,7 @@ function calculateTotalStats(students, attendance, dates) {
     };
 }
 
-// 선생님 출석 통계 계산
+// 선생님 출석 통계 계산 (수정된 버전)
 function calculateTeacherStats(teachers, teacherAttendance, dates) {
     let totalPresent = 0;
     let totalAbsent = 0;
@@ -515,7 +541,7 @@ function calculateTeacherStats(teachers, teacherAttendance, dates) {
     };
 }
 
-// 학년별 통계 계산
+// 학년별 통계 계산 (수정된 버전)
 function calculateGradeStats(students, attendance, dates) {
     const grades = ['중1', '중2', '중3', '고1', '고2', '고3'];
     const gradeStats = {};
@@ -528,8 +554,9 @@ function calculateGradeStats(students, attendance, dates) {
         if (attendance[date]) {
             const dayAttendance = attendance[date];
             Object.entries(dayAttendance).forEach(([studentId, status]) => {
+                // 학생 ID로 학생 정보 찾기
                 const student = Object.values(students).find(s => s.id === studentId);
-                if (student && student.grade) {
+                if (student && student.grade && gradeStats[student.grade]) {
                     if (status === 'present') {
                         gradeStats[student.grade].present++;
                     } else if (status === 'absent') {
@@ -543,26 +570,31 @@ function calculateGradeStats(students, attendance, dates) {
     return gradeStats;
 }
 
-// 학년별 통계 HTML 생성
+// 학년별 통계 HTML 생성 (수정된 버전)
 function generateGradeStatsHTML(gradeStats) {
     let html = '';
+    let hasData = false;
+    
     Object.entries(gradeStats).forEach(([grade, stats]) => {
         const total = stats.present + stats.absent;
-        const rate = total > 0 ? ((stats.present / total) * 100).toFixed(1) : 0;
-        
-        html += `
-            <div style="margin-bottom: 10px; padding: 10px; background-color: #555; border-radius: 5px;">
-                <div style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">${grade}</div>
-                <div style="display: flex; gap: 10px; font-size: 14px;">
-                    <span>출석: ${stats.present}</span>
-                    <span>결석: ${stats.absent}</span>
-                    <span>출석률: ${rate}%</span>
+        if (total > 0) {
+            hasData = true;
+            const rate = ((stats.present / total) * 100).toFixed(1);
+            
+            html += `
+                <div style="margin-bottom: 10px; padding: 10px; background-color: #555; border-radius: 5px;">
+                    <div style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">${grade}</div>
+                    <div style="display: flex; gap: 10px; font-size: 14px;">
+                        <span>출석: ${stats.present}</span>
+                        <span>결석: ${stats.absent}</span>
+                        <span>출석률: ${rate}%</span>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     });
     
-    return html || '<p>데이터가 없습니다.</p>';
+    return hasData ? html : '<p>해당 기간에 출석 데이터가 없습니다.</p>';
 }
 
 // 출석 데이터 로드
@@ -574,7 +606,7 @@ function loadAttendanceData() {
     }
     
     // 일요일 체크
-    const selectedDate = new Date(date);
+    const selectedDate = new Date(date + 'T00:00:00');
     if (selectedDate.getDay() !== 0) {
         alert('출석체크는 일요일에만 가능합니다.');
         return;
@@ -583,6 +615,12 @@ function loadAttendanceData() {
     database.ref('students').once('value', (snapshot) => {
         const students = snapshot.val() || {};
         displayAttendanceList(students, date);
+        
+        // 기존 출석 데이터 로드하여 체크 상태 복원
+        database.ref(`attendance/students/${date}`).once('value', (attendanceSnapshot) => {
+            const existingAttendance = attendanceSnapshot.val() || {};
+            restoreAttendanceState(existingAttendance, 'student');
+        });
     });
 }
 
@@ -594,7 +632,7 @@ function loadTeacherAttendanceData() {
         return;
     }
     
-    const selectedDate = new Date(date);
+    const selectedDate = new Date(date + 'T00:00:00');
     if (selectedDate.getDay() !== 0) {
         alert('출석체크는 일요일에만 가능합니다.');
         return;
@@ -603,6 +641,25 @@ function loadTeacherAttendanceData() {
     database.ref('teachers').once('value', (snapshot) => {
         const teachers = snapshot.val() || {};
         displayTeacherAttendanceList(teachers, date);
+        
+        // 기존 출석 데이터 로드하여 체크 상태 복원
+        database.ref(`attendance/teachers/${date}`).once('value', (attendanceSnapshot) => {
+            const existingAttendance = attendanceSnapshot.val() || {};
+            restoreAttendanceState(existingAttendance, 'teacher');
+        });
+    });
+}
+
+// 기존 출석 상태 복원
+function restoreAttendanceState(attendanceData, type) {
+    const prefix = type === 'student' ? 'attendance_' : 'teacher_attendance_';
+    
+    Object.entries(attendanceData).forEach(([personId, status]) => {
+        const radioName = prefix + personId;
+        const radio = document.querySelector(`input[name="${radioName}"][value="${status}"]`);
+        if (radio) {
+            radio.checked = true;
+        }
     });
 }
 
@@ -684,7 +741,7 @@ function displayTeacherAttendanceList(teachers, date) {
     container.appendChild(teacherDiv);
 }
 
-// 출석 저장
+// 출석 저장 (수정된 버전)
 function saveAttendance(type) {
     const date = type === 'student' ? 
         document.getElementById('attendanceDate').value : 
@@ -712,16 +769,24 @@ function saveAttendance(type) {
     }
     
     const path = type === 'student' ? 'attendance/students' : 'attendance/teachers';
+    
+    console.log('Saving attendance:', { path, date, attendanceData });
+    
     database.ref(`${path}/${date}`).set(attendanceData)
         .then(() => {
             alert('출석 정보가 저장되었습니다.');
+            console.log('Attendance saved successfully');
+            
             // 대시보드가 현재 화면이면 자동 새로고침
             if (currentScreen === 'dashboard') {
-                loadDashboard();
+                setTimeout(() => {
+                    loadDashboard();
+                }, 500);
             }
         })
         .catch(error => {
             alert('저장 중 오류가 발생했습니다: ' + error.message);
+            console.error('Save error:', error);
         });
 }
 
