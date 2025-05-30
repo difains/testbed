@@ -1,22 +1,16 @@
 // Firebase 설정
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCUIxNXpcXpBS2axvk9s9gTh00EvGOKiSI",
-  authDomain: "seoul-central-youth-system.firebaseapp.com",
-  databaseURL: "https://seoul-central-youth-system-default-rtdb.firebaseio.com",
-  projectId: "seoul-central-youth-system",
-  storageBucket: "seoul-central-youth-system.firebasestorage.app",
-  messagingSenderId: "686027953128",
-  appId: "1:686027953128:web:4c1b931bab361c01770a5d",
-  measurementId: "G-ZY7ZHGC4MP"
+    apiKey: "AIzaSyCUIxNXpcXpBS2axvk9s9gTh00EvGOKiSI",
+    authDomain: "seoul-central-youth-system.firebaseapp.com",
+    databaseURL: "https://seoul-central-youth-system-default-rtdb.firebaseio.com",
+    projectId: "seoul-central-youth-system",
+    storageBucket: "seoul-central-youth-system.firebasestorage.app",
+    messagingSenderId: "686027953128",
+    appId: "1:686027953128:web:4c1b931bab361c01770a5d",
+    measurementId: "G-ZY7ZHGC4MP"
 };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
-
-// Firebase 초기화
+// Firebase 초기화 (v8 호환 방식 사용)
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
@@ -108,57 +102,64 @@ function setTodayDate(elementId = 'attendanceDate') {
 }
 
 // 학생 등록
-document.getElementById('studentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const studentData = {
-        name: formData.get('name'),
-        grade: formData.get('grade'),
-        infantBaptism: formData.get('infantBaptism') === 'on',
-        baptism: formData.get('baptism') === 'on',
-        confirmation: formData.get('confirmation') === 'on',
-        phone: formData.get('phone'),
-        fatherName: formData.get('fatherName'),
-        motherName: formData.get('motherName'),
-        parentPhone: formData.get('parentPhone'),
-        registrationDate: formData.get('registrationDate'),
-        id: Date.now().toString()
-    };
-    
-    database.ref('students/' + studentData.id).set(studentData)
-        .then(() => {
-            alert('학생이 등록되었습니다.');
-            e.target.reset();
-            loadStudents();
-        })
-        .catch(error => {
-            alert('등록 중 오류가 발생했습니다: ' + error.message);
-        });
-});
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('studentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const studentData = {
+            name: formData.get('name'),
+            grade: formData.get('grade'),
+            infantBaptism: formData.get('infantBaptism') === 'on',
+            baptism: formData.get('baptism') === 'on',
+            confirmation: formData.get('confirmation') === 'on',
+            phone: formData.get('phone'),
+            fatherName: formData.get('fatherName'),
+            motherName: formData.get('motherName'),
+            parentPhone: formData.get('parentPhone'),
+            registrationDate: formData.get('registrationDate'),
+            id: Date.now().toString()
+        };
+        
+        database.ref('students/' + studentData.id).set(studentData)
+            .then(() => {
+                alert('학생이 등록되었습니다.');
+                e.target.reset();
+                loadStudents();
+            })
+            .catch(error => {
+                alert('등록 중 오류가 발생했습니다: ' + error.message);
+            });
+    });
 
-// 선생님 등록
-document.getElementById('teacherForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const teacherData = {
-        name: formData.get('name'),
-        phone: formData.get('phone'),
-        district: formData.get('district'),
-        startDate: formData.get('startDate'),
-        id: Date.now().toString()
-    };
-    
-    database.ref('teachers/' + teacherData.id).set(teacherData)
-        .then(() => {
-            alert('선생님이 등록되었습니다.');
-            e.target.reset();
-            loadTeachers();
-        })
-        .catch(error => {
-            alert('등록 중 오류가 발생했습니다: ' + error.message);
-        });
+    // 선생님 등록
+    document.getElementById('teacherForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const teacherData = {
+            name: formData.get('name'),
+            phone: formData.get('phone'),
+            district: formData.get('district'),
+            startDate: formData.get('startDate'),
+            id: Date.now().toString()
+        };
+        
+        database.ref('teachers/' + teacherData.id).set(teacherData)
+            .then(() => {
+                alert('선생님이 등록되었습니다.');
+                e.target.reset();
+                loadTeachers();
+            })
+            .catch(error => {
+                alert('등록 중 오류가 발생했습니다: ' + error.message);
+            });
+    });
+
+    // 초기 날짜 설정
+    setTodayDate();
+    setTodayDate('teacherAttendanceDate');
+    setTodayDate('dashboardDate');
 });
 
 // 학생 목록 로드
@@ -380,7 +381,6 @@ function loadDashboard() {
     }
     
     // 대시보드 데이터 로드 및 표시 로직
-    // 실제 구현에서는 Firebase에서 출석 데이터를 가져와서 통계를 계산합니다.
     const container = document.getElementById('dashboardContent');
     container.innerHTML = `
         <div class="dashboard-card">
@@ -393,13 +393,6 @@ function loadDashboard() {
         </div>
     `;
 }
-
-// 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    setTodayDate();
-    setTodayDate('teacherAttendanceDate');
-    setTodayDate('dashboardDate');
-});
 
 // 메뉴 외부 클릭 시 닫기
 document.addEventListener('click', function(e) {
